@@ -8,3 +8,5 @@
 1. Chat away 🚀🚀🚀
 
 # Live Demo
+
+🌐 [Click Here](https://reggieray.github.io/chat-bot/) or copy and paste `https://reggieray.github.io/chat-bot/` in your browser.
