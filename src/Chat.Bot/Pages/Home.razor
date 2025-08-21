@@ -1,0 +1,97 @@
+﻿@page "/"
+@using GenerativeAI
+@using GenerativeAI.Exceptions
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<PageTitle>Chat Bot</PageTitle>
+<MudPaper Class="pa-6 mx-auto mt-6" Elevation="4" Rounded="true">
+    <MudMarkdown Value="@_welcomeContent" />
+</MudPaper>
+
+
+<MudPaper Class="pa-6 mx-auto mt-6" Elevation="4" Rounded="true">
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h5" GutterBottom="true">Gemini Settings</MudText>
+
+        <MudTextField @bind-Value="_inputText"
+                      Label="Api Key"
+                      Variant="Variant.Outlined"
+                      FullWidth="true" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SyncModels">
+            Sync Models
+        </MudButton>
+
+        @if (_options.Any())
+        {
+            <MudSelect T="string" @bind-Value="_selectedOption"
+                       Label="Gemini Model"
+                       Variant="Variant.Outlined"
+                       FullWidth="true">
+                @foreach (var option in _options)
+                {
+                    <MudSelectItem Value="@option">@option</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveSettings">
+                Save
+            </MudButton>
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" ContentAlignment="HorizontalAlignment.End">@(_errorMessage)</MudAlert>
+        }
+
+    </MudStack>
+</MudPaper>
+
+@code {
+    private string _inputText { get; set; }
+    private string _selectedOption { get; set; }
+    private string _errorMessage { get; set; }
+    private string _welcomeContent =>
+        @"### Getting Started
+
+1. Create a free [Genimi api key](https://aistudio.google.com/apikey)
+1. Enter the api key below.
+1. Click `SYNC MODELS`. A dropdown should appear with available models.
+1. Select Model and click `SAVE`.
+1. Navigate to `Chat` page from the side menu.
+1. Chat away 🚀🚀🚀
+
+        ";
+
+    private List<string> _options = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load saved settings from local storage
+        _inputText = await localStorage.GetItemAsync<string>("api_key") ?? string.Empty;
+        _selectedOption = await localStorage.GetItemAsync<string>("model") ?? string.Empty;
+    }
+
+    private async Task SaveSettings()
+    {
+        // Save to local storage
+        await localStorage.SetItemAsync("api_key", _inputText);
+        await localStorage.SetItemAsync("model", _selectedOption);
+
+        Console.WriteLine($"Saved -> Text: {_inputText}, Option: {_selectedOption}");
+    }
+
+    private async Task SyncModels()
+    {
+        try
+        {
+            var models = await new GoogleAi(_inputText).ListModelsAsync();
+
+            _options = models?.Models.Select(x => x.Name).ToList();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.ErrorMessage;
+        }
+    }
+}

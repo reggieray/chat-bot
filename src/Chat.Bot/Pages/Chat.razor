@@ -1,0 +1,111 @@
+﻿@page "/chat"
+@using GenerativeAI
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-0">
+    <div class="d-flex flex-column" style="height: 90vh;">
+
+        <div id="chat-container" class="flex-grow-1 pa-4" style="overflow-y: auto;">
+            @foreach (var message in chatMessages)
+            {
+                <div class="@($"d-flex flex-row my-2 {(message.Author == "user" ? "flex-row-reverse" : "")}")">
+                    <MudPaper Class="@($"pa-3 rounded-lg {(message.Author == "user" ? "mud-theme-primary" : "mud-theme-surface")}")" Elevation="2">
+                        @if (message.Author == "user")
+                        {
+                            <MudText>@(message.Text)</MudText>
+                        }
+                        else
+                        {
+                            <MudMarkdown Value="@message.Text" />
+                        }
+                        
+                    </MudPaper>
+                </div>
+            }
+            @if (_isSending)
+            {
+                <div class="d-flex flex-row my-2">
+                    <MudPaper Class="pa-3 rounded-lg mud-theme-surface" Elevation="2">
+                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                    </MudPaper>
+                </div>
+            }
+        </div>
+
+        <MudPaper Elevation="2" Class="pa-2 d-flex">
+            <MudTextField @bind-Value="newMessage"
+                          Placeholder="Ask the AI anything..."
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.Send"
+                          OnAdornmentClick="SendMessage"
+                          OnKeyUp="HandleKeyUp"
+                          Class="flex-grow-1"
+                          Lines="1"
+                          Disabled="_isSending" />
+        </MudPaper>
+        <MudText>@model</MudText>
+    </div>
+</MudContainer>
+
+@code {
+
+    private string apiKey = "";
+    private string model = "";
+
+    private string newMessage = "";
+    private List<ChatMessage> chatMessages = new List<ChatMessage>();
+    private bool _isSending = false;
+
+    private ChatSession? _geminiChatSession;
+
+    private async Task SendMessage()
+    {
+        _isSending = true;
+
+        if (!string.IsNullOrWhiteSpace(newMessage))
+        {
+            if (_geminiChatSession is null)
+            {
+                _geminiChatSession = GetGeminiClient().StartChat();
+            }
+
+            var userMessage = new ChatMessage { Text = newMessage, Author = "user" };
+            chatMessages.Add(userMessage);
+
+            var geminiResponse = await _geminiChatSession.GenerateContentAsync(newMessage);
+
+            chatMessages.Add(new ChatMessage { Text = geminiResponse.Text()!, Author = "ai" });
+
+            newMessage = "";
+        }
+
+        _isSending = false;
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private GenerativeModel GetGeminiClient()
+    {
+        return new GoogleAi(apiKey)
+            .CreateGenerativeModel(model);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        apiKey = await localStorage.GetItemAsync<string>("api_key") ?? string.Empty;
+        model = await localStorage.GetItemAsync<string>("model") ?? string.Empty;
+    }
+
+    public class ChatMessage
+    {
+        public string Text { get; set; }
+        public string Author { get; set; } // "user" or "ai"
+    }
+}
