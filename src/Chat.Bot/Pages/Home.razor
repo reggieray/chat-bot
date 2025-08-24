@@ -13,10 +13,7 @@
     <MudStack Spacing="3">
         <MudText Typo="Typo.h5" GutterBottom="true">Gemini Settings</MudText>
 
-        <MudTextField @bind-Value="_inputText"
-                      Label="Api Key"
-                      Variant="Variant.Outlined"
-                      FullWidth="true" />
+        <MudTextField @bind-Value="_inputText" Label="Api Key" Variant="Variant.Outlined" FullWidth="true" />
 
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SyncModels">
             Sync Models
@@ -24,10 +21,8 @@
 
         @if (_options.Any())
         {
-            <MudSelect T="string" @bind-Value="_selectedOption"
-                       Label="Gemini Model"
-                       Variant="Variant.Outlined"
-                       FullWidth="true">
+            <MudSelect T="string" @bind-Value="_selectedOption" Label="Gemini Model" Variant="Variant.Outlined"
+                FullWidth="true">
                 @foreach (var option in _options)
                 {
                     <MudSelectItem Value="@option">@option</MudSelectItem>
@@ -52,7 +47,7 @@
     private string _selectedOption { get; set; }
     private string _errorMessage { get; set; }
     private string _welcomeContent =>
-        @"### Getting Started
+    @"### Getting Started
 
 1. Create a free [Genimi api key](https://aistudio.google.com/apikey)
 1. Enter the api key below.
@@ -61,7 +56,10 @@
 1. Navigate to `Chat` page from the side menu.
 1. Chat away 🚀🚀🚀
 
-        ";
+> **_NOTE:_** Any data is stored on your local storage within the browser. This app doesn't log or send data
+anywhere. See [source code](https://github.com/reggieray/chat-bot).
+
+";
 
     private List<string> _options = new();
 
